@@ -32,11 +32,13 @@ function 8953_sched_dcvs_eas()
     #governor settings
     echo 1 > /sys/devices/system/cpu/cpu0/online
     echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-    echo 0 > /sys/devices/system/cpu/cpufreq/schedutil/rate_limit_us
-    #set the hispeed_freq
-    echo 1401600 > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_freq
-    #default value for hispeed_load is 90, for 8953 and sdm450 it should be 85
-    echo 85 > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_load
+    echo 500 > /sys/devices/system/cpu/cpufreq/schedutil/up_rate_limit_us
+    echo 20000 > /sys/devices/system/cpu/cpufreq/schedutil/down_rate_limit_us
+    echo 0 > /sys/devices/system/cpu/cpufreq/schedutil/iowait_boost_enable
+
+    #CPU HZ
+    echo 652000 >  /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+    echo 2016000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
 }
 
 function 8917_sched_dcvs_eas()
@@ -1754,12 +1756,9 @@ case "$target" in
                     echo -n enable > $mode
                 done
 
-                #if the kernel version >=4.9,use the schedutil governor
-                KernelVersionStr=`cat /proc/sys/kernel/osrelease`
-                KernelVersionS=${KernelVersionStr:2:2}
-                KernelVersionA=${KernelVersionStr:0:1}
-                KernelVersionB=${KernelVersionS%.*}
-                if [ $KernelVersionA -ge 4 ] && [ $KernelVersionB -ge 9 ]; then
+                #if the kernel have schedutil,use the schedutil governor
+                EnergyAware=`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | grep schedutil`
+                if [[ -n $EnergyAware ]]; then
                     8953_sched_dcvs_eas
                 else
                     8953_sched_dcvs_hmp
